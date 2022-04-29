@@ -6,6 +6,7 @@ import scipy.spatial
 import os
 from os.path import join
 import matplotlib.pyplot as plt
+from seg_metrics import computeQualityMeasures
 
 # Set the path to the source data (e.g. the training data for self-testing)
 # and the output directory of that subject
@@ -23,35 +24,46 @@ def do():
     avds = list()
     les_dets = list()
     f1s = list()
+    hd = list()
+    precisions = list()
     for patient in patients:
         print(patient)
-        testImage = sitk.GetImageFromArray(np.load(join(gr_t, patient)).astype(int))
-        resultImage = sitk.GetImageFromArray(np.load(join(pred, patient)).astype(int))
+        array_gr_t = np.load(join(gr_t, patient))
+        array_pred = np.load(join(pred, patient))
+        array_pred = array_pred//np.max(array_pred)
+
+        testImage = sitk.GetImageFromArray(array_gr_t.astype(int))
+        resultImage = sitk.GetImageFromArray(array_pred.astype(int))
         dsc = getDSC(testImage, resultImage)
         #h95 = getHausdorff(testImage, resultImage)
+        ravd = RAVD(array_gr_t, array_pred)  
         avd = getAVD(testImage, resultImage)    
-        recall, f1 = getLesionDetection(testImage, resultImage)    
+        precision, recall, f1 = getLesionDetection(testImage, resultImage)
+        res_dict = computeQualityMeasures(array_pred, array_gr_t, (1,2,3), ['hd95'])    
         dices.append(dsc)
         avds.append(avd)
+        hd.append(res_dict.get('hd95', None))
         les_dets.append(recall)
         f1s.append(f1)
+        precisions.append(precision)
         print ('Dice',                dsc,       '(higher is better, max=1)')
         #print ('HD',                  h95, 'mm',  '(lower is better, min=0)')
         print ('AVD',                 avd,  '%',  '(lower is better, min=0)')
+        print ('RAVD',                ravd,  '%',  '(lower is better, min=0)')
         print ('Lesion detection', recall,       '(higher is better, max=1)')
         print ('Lesion F1',            f1,       '(higher is better, max=1)')
         
     #Creating subplot of each column with its own scale
     red_circle = dict(markerfacecolor='red', marker='o', markeredgecolor='white')
-    data = [dices, avds, les_dets, f1s]
-    titles = ['Dice', 'AVD', 'Recall', 'F1']
+    data = [dices, les_dets, precisions, f1s, hd, avds]
+    titles = ['Dice', 'Recall', 'Precision', 'F1', 'Hausdorff distance \n 95% percentile', 'Average volume \n distance']
     fig, axs = plt.subplots(1, len(data), figsize=(20,10))
 
     for i, ax in enumerate(axs.flat):
         ax.boxplot(data[i], flierprops=red_circle)
         ax.set_title(titles[i], fontsize=20, fontweight='bold')
         ax.tick_params(axis='y', labelsize=14)
-        
+    fig.suptitle('Swin Transformer with Dice loss', size=30, fontweight='bold')
     plt.tight_layout()
     '''
     data = [dices, avds, les_dets, f1s]
@@ -59,7 +71,7 @@ def do():
     ax.set_title('upernet_swin_tiny_patch4_80k_wmh_ce')
     ax.boxplot(data)
     '''
-    plt.savefig('/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_80k_wmh_dice/pred/boxplots.png')
+    plt.savefig('/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_80k_wmh_dice/pred/boxplots_miccai.png')
     
     
 
@@ -85,6 +97,9 @@ def getImages(testFilename, resultFilename):
         
     return maskedTestImage, bResultImage
     
+def RAVD(testImage, resultImage):
+    ravd=(abs(testImage.sum() - resultImage.sum())/testImage.sum())*100
+    return ravd
 
 def getResultFilename(participantDir):
     """Find the filename of the result image.
@@ -185,7 +200,7 @@ def getLesionDetection(testImage, resultImage):
         return recall, 0.0    
     f1 = 2.0 * (precision * recall) / (precision + recall)
     
-    return recall, f1    
+    return precision, recall, f1    
 
     
 def getAVD(testImage, resultImage):   

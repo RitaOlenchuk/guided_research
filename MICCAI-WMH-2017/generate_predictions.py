@@ -7,7 +7,7 @@ from os.path import isfile, join
 def get_patiens(file_list):
     return np.unique([file_prefix.split('_')[0]+'_'+file_prefix.split('_')[1] for file_prefix in file_list])
 
-output_pred = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_80k_wmh_ce/pred'
+output_pred = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_160k_wmh_ce/pred'
 truth = '/media/data_4T/bran/WMH_dataset/raw/training/patient_specific_flair_png2/check/'
 if not os.path.exists(output_pred):
     os.makedirs(output_pred)
@@ -15,8 +15,8 @@ if not os.path.exists(output_pred):
 if not os.path.exists(output_pred):
     os.makedirs(output_pred)
 
-config_file = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_80k_wmh_ce/upernet_swin_tiny_patch4_80k_wmh_ce.py'
-checkpoint_file = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_80k_wmh_ce/latest.pth'
+config_file = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_160k_wmh_ce/upernet_swin_tiny_patch4_160k_wmh_ce.py'
+checkpoint_file = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_160k_wmh_ce/latest.pth'
 
 to_test = '/media/data_4T/bran/WMH_dataset/raw/training/patient_specific_flair_png2/val/images'
 
