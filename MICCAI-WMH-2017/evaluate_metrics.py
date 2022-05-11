@@ -8,14 +8,9 @@ from os.path import join
 import matplotlib.pyplot as plt
 from seg_metrics import computeQualityMeasures
 
-# Set the path to the source data (e.g. the training data for self-testing)
-# and the output directory of that subject
-pred        = '/media/data_4T/bran/WMH_dataset/raw/training/patient_specific_flair_png2/check' # For example: '/data/Utrecht/0'
-gr_t        = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_80k_wmh_dice/pred' # For example: '/output/teamname/0'
 
 
-
-def do():
+def do(gr_t, pred):
     """Main function"""
     #resultFilename = getResultFilename(participantDir)
     #testImage, resultImage = getImages(os.path.join(testDir, 'wmh.nii.gz'), resultFilename)
@@ -29,6 +24,7 @@ def do():
     for patient in patients:
         print(patient)
         array_gr_t = np.load(join(gr_t, patient))
+        array_gr_t = array_gr_t//np.max(array_gr_t)
         array_pred = np.load(join(pred, patient))
         array_pred = array_pred//np.max(array_pred)
 
@@ -47,31 +43,14 @@ def do():
         f1s.append(f1)
         precisions.append(precision)
         print ('Dice',                dsc,       '(higher is better, max=1)')
-        #print ('HD',                  h95, 'mm',  '(lower is better, min=0)')
+        print('precision', precision)
+        print ('HD',                  res_dict.get('hd95', None), 'mm',  '(lower is better, min=0)')
         print ('AVD',                 avd,  '%',  '(lower is better, min=0)')
-        print ('RAVD',                ravd,  '%',  '(lower is better, min=0)')
-        print ('Lesion detection', recall,       '(higher is better, max=1)')
+        print ('recall', recall,       '(higher is better, max=1)')
         print ('Lesion F1',            f1,       '(higher is better, max=1)')
         
-    #Creating subplot of each column with its own scale
-    red_circle = dict(markerfacecolor='red', marker='o', markeredgecolor='white')
     data = [dices, les_dets, precisions, f1s, hd, avds]
-    titles = ['Dice', 'Recall', 'Precision', 'F1', 'Hausdorff distance \n 95% percentile', 'Average volume \n distance']
-    fig, axs = plt.subplots(1, len(data), figsize=(20,10))
-
-    for i, ax in enumerate(axs.flat):
-        ax.boxplot(data[i], flierprops=red_circle)
-        ax.set_title(titles[i], fontsize=20, fontweight='bold')
-        ax.tick_params(axis='y', labelsize=14)
-    fig.suptitle('Swin Transformer with Dice loss', size=30, fontweight='bold')
-    plt.tight_layout()
-    '''
-    data = [dices, avds, les_dets, f1s]
-    fig, ax = plt.subplots()
-    ax.set_title('upernet_swin_tiny_patch4_80k_wmh_ce')
-    ax.boxplot(data)
-    '''
-    plt.savefig('/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_80k_wmh_dice/pred/boxplots_miccai.png')
+    return data
     
     
 
@@ -215,4 +194,46 @@ def getAVD(testImage, resultImage):
     return float(abs(testStatistics.GetSum() - resultStatistics.GetSum())) / float(testStatistics.GetSum()) * 100
     
 if __name__ == "__main__":
-    do() 
+    medical=True
+    if medical:
+        gr_t      = '/media/data_4T/bran/WMH_dataset/raw/training/center_specific_flair_png/check' 
+        pred_unet       = '/media/data_4T/margaryta/base/center_level/deeplabv3_unet_s5-d16_80k_wmh_dice/pred' 
+        pred_swin       = '/media/data_4T/margaryta/base/center_level/upernet_swin_tiny_patch4_80k_wmh_dice/pred' 
+        #Creating subplot of each column with its own scale
+        red_circle = dict(markerfacecolor='red', marker='o', markeredgecolor='white')
+        print('UNET----------------------------')
+        data_unet = do(gr_t, pred_unet) 
+        print('SWIN----------------------------')
+        data_swin = do(gr_t, pred_swin) 
+        
+        titles = ['Dice', 'Recall', 'Precision', 'F1', 'Hausdorff distance \n 95% percentile', 'Average volume \n difference']
+        fig, axs = plt.subplots(1, len(data_unet), figsize=(20,10))
+
+        for i, ax in enumerate(axs.flat):
+            data = {'UNet': data_unet[i], 'Swin': data_swin[i]}
+            ax.boxplot(data.values(), flierprops=red_circle, widths=0.5)
+            ax.set_title(titles[i], fontsize=20, fontweight='bold')
+            ax.tick_params(axis='y', labelsize=15)
+            ax.set_xticklabels(data.keys(), fontsize=15)
+        fig.suptitle('Swin Trasformer with Dice Loss', size=30, fontweight='bold')
+        plt.tight_layout()
+
+        plt.savefig('/media/data_4T/margaryta/base/center_level/Singapore/boxplots_singapore.png')
+    else:
+        gr_t      = '/media/data_4T/bran/WMH_dataset/raw/training/patient_specific_flair_png2/check' 
+        pred       = '/media/data_4T/margaryta/base/patient_level/unet/deeplabv3_unet_s5-d16_80k_wmh_dice/pred' 
+        #Creating subplot of each column with its own scale
+        red_circle = dict(markerfacecolor='red', marker='o', markeredgecolor='white')
+        data = do(gr_t, pred) 
+        
+        titles = ['Dice', 'Recall', 'Precision', 'F1', 'Hausdorff distance \n 95% percentile', 'Average volume \n difference']
+        fig, axs = plt.subplots(1, len(data), figsize=(20,10))
+
+        for i, ax in enumerate(axs.flat):
+            ax.boxplot(data[i], flierprops=red_circle, widths=0.35)
+            ax.set_title(titles[i], fontsize=20, fontweight='bold')
+            ax.tick_params(axis='y', labelsize=15)
+        fig.suptitle('UNet with Dice Loss', size=30, fontweight='bold')
+        plt.tight_layout()
+
+        plt.savefig('/media/data_4T/margaryta/base/patient_level/unet/deeplabv3_unet_s5-d16_80k_wmh_dice/pred/boxplots_unet_dice.png')

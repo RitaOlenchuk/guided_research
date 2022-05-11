@@ -7,18 +7,18 @@ from os.path import isfile, join
 def get_patiens(file_list):
     return np.unique([file_prefix.split('_')[0]+'_'+file_prefix.split('_')[1] for file_prefix in file_list])
 
-output_pred = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_160k_wmh_ce/pred'
-truth = '/media/data_4T/bran/WMH_dataset/raw/training/patient_specific_flair_png2/check/'
+output_pred = '/media/data_4T/margaryta/base/center_level/Singapore/upernet_swin_tiny_patch4_80k_wmh_dice/pred'
+truth = '/media/data_4T/bran/WMH_dataset/raw/training/singapore_flair_png/check/'
 if not os.path.exists(output_pred):
     os.makedirs(output_pred)
 
 if not os.path.exists(output_pred):
     os.makedirs(output_pred)
 
-config_file = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_160k_wmh_ce/upernet_swin_tiny_patch4_160k_wmh_ce.py'
-checkpoint_file = '/media/data_4T/margaryta/base/patient_level/swin/upernet_swin_tiny_patch4_160k_wmh_ce/latest.pth'
+config_file = '/media/data_4T/margaryta/base/center_level/Singapore/upernet_swin_tiny_patch4_80k_wmh_dice/upernet_swin_tiny_patch4_80k_wmh_dice_si.py'
+checkpoint_file = '/media/data_4T/margaryta/base/center_level/Singapore/upernet_swin_tiny_patch4_80k_wmh_dice/latest.pth'
 
-to_test = '/media/data_4T/bran/WMH_dataset/raw/training/patient_specific_flair_png2/val/images'
+to_test = '/media/data_4T/bran/WMH_dataset/raw/training/singapore_flair_png/val/images'
 
 imgs = [f for f in listdir(to_test) if isfile(join(to_test, f))]
 patients = get_patiens(imgs)
